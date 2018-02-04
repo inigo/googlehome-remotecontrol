@@ -1,0 +1,10 @@
+[package]
+name = "rust-remotecontrol-fulfillment"
+version = "0.1.0"
+authors = ["Inigo <inigo.surguy@gmail.com>"]
+
+[dependencies]
+iron = "0.6.0"
+mime = "0.2.3"
+router = "0.6.0"
+urlencoded = "0.6.0"
