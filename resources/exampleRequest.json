@@ -1,0 +1,110 @@
+{
+  "originalRequest": {
+    "source": "google",
+    "version": "2",
+    "data": {
+      "isInSandbox": true,
+      "surface": {
+        "capabilities": [
+          {
+            "name": "actions.capability.MEDIA_RESPONSE_AUDIO"
+          },
+          {
+            "name": "actions.capability.AUDIO_OUTPUT"
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "rawInputs": [
+            {
+              "query": "turn on TV",
+              "inputType": "VOICE"
+            }
+          ],
+          "arguments": [
+            {
+              "rawText": "turn on TV",
+              "textValue": "turn on TV",
+              "name": "text"
+            }
+          ],
+          "intent": "actions.intent.TEXT"
+        }
+      ],
+      "user": {
+        "lastSeen": "2018-02-04T16:42:23Z",
+        "locale": "en-GB",
+        "userId": "ABwppHEMnpLCDsXw3xSFsezclDmBinekY8z_s4sdNXPgibAjsoDzP9jjSWTM-QMqi_kUep1ZntS5T39isw"
+      },
+      "conversation": {
+        "conversationId": "1517762762729",
+        "type": "ACTIVE",
+        "conversationToken": "[]"
+      },
+      "availableSurfaces": [
+        {
+          "capabilities": [
+            {
+              "name": "actions.capability.SCREEN_OUTPUT"
+            },
+            {
+              "name": "actions.capability.AUDIO_OUTPUT"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "id": "6e677c59-554f-47e6-8b94-d6cd43af0de2",
+  "timestamp": "2018-02-04T16:46:13.721Z",
+  "lang": "en-gb",
+  "result": {
+    "source": "agent",
+    "resolvedQuery": "turn on TV",
+    "speech": "",
+    "action": "TvPower",
+    "actionIncomplete": false,
+    "parameters": {},
+    "contexts": [
+      {
+        "name": "google_assistant_input_type_voice",
+        "parameters": {},
+        "lifespan": 0
+      },
+      {
+        "name": "actions_capability_audio_output",
+        "parameters": {},
+        "lifespan": 0
+      },
+      {
+        "name": "actions_capability_media_response_audio",
+        "parameters": {},
+        "lifespan": 0
+      }
+    ],
+    "metadata": {
+      "intentId": "51186442-0c95-4ee1-9c5d-30b707cfb1e3",
+      "webhookUsed": "true",
+      "webhookForSlotFillingUsed": "false",
+      "nluResponseTime": 12,
+      "intentName": "turn on the tv"
+    },
+    "fulfillment": {
+      "speech": "Turning on the TV",
+      "messages": [
+        {
+          "type": 0,
+          "speech": "Turning on the TV"
+        }
+      ]
+    },
+    "score": 1
+  },
+  "status": {
+    "code": 200,
+    "errorType": "success",
+    "webhookTimedOut": false
+  },
+  "sessionId": "1517762762729"
+}
