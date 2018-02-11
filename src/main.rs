@@ -9,31 +9,36 @@ use std::io::Read;
 use std::fmt::{self, Formatter, Display};
 use rustc_serialize::json::{self};
 
+const BLACK_BEAN_PROGRAM: &str = "/Users/inigosurguy/Code/Inigo/rmmini/BlackBeanControl/BlackBeanControl.py";
+
 fn main() {
     println!("Starting Rust listener");
     Iron::new(send_response).http("0.0.0.0:9000").unwrap();
 }
 
 fn send_response(request: &mut Request) -> IronResult<Response> {
-    println!("sending response");
+    println!("Sending response");
 
     let mut payload = String::new();
     request.body.read_to_string(&mut payload).unwrap();
+
     let action = extract_action_from_json(payload.as_str());
-    let activity = convert_action_to_activity(action.as_str());
-    println!("Got activity of {}", activity);
+    let activity_opt = convert_action_to_activity(action.as_str());
+    println!("Got activity of {:?}", activity_opt);
 
-    call_remote_control(activity.remote_control_action.as_str());
+    if let Some(ref a) = activity_opt {
+        call_remote_control(a.remote_control_action.as_str() );
+        println!("Called remote control with {}", a.remote_control_action);
+    }
 
-    println!("Called remote control with {}", activity.remote_control_action);
+
+    let response_message = activity_opt.map(|a| a.message).unwrap_or("Action not known".to_string());
 
     let mut response = Response::new();
     response.set_mut(status::Ok);
     response.set_mut(mime!(Application/Json));
     // This would be done better with Serde
-    response.set_mut(format!(r#"
-        {{ "speech" : "{}", "displayText" : "{}" }}
-    "#, activity.message, activity.message));
+    response.set_mut(format!("{{ 'speech' : '{}', 'displayText' : '{}' }}", response_message, response_message));
     Ok(response)
 }
 
@@ -42,31 +47,30 @@ fn extract_action_from_json(json_body: &str) -> String {
     if let Ok(request_json) = json::Json::from_str(json_body) {
         if let Some(result) = request_json.find("result") {
             if let Some(action) = result.find("action") {
-                // returning String here not &str for reasons of ownership I don't yet really understand
                 let result = action.as_string().unwrap();
-                return result.to_owned();
+                return result.to_string();
             };
         };
     };
     "Unknown".to_owned()
 }
 
-fn convert_action_to_activity(action_name: &str) -> Activity {
-    if action_name=="TvPowerOn" {
+fn convert_action_to_activity(action_name: &str) -> Option<Activity> {
+    let activities = activity_lookup();
+    activities.iter().find(|a| a.activity_name == action_name).map(|a| a.clone())
+}
+
+fn activity_lookup() -> Vec<Activity> {
+    vec![
         Activity { activity_name: "TvPowerOn".to_string(), remote_control_action: "TvPower".to_string(), message: "Turning on the tv".to_string() }
-    } else if action_name=="TvPowerOff" {
-        Activity { activity_name: "TvPowerOff".to_string(), remote_control_action: "TvPower".to_string(), message: "Turning off the tv".to_string() }
-    } else if action_name=="SpeakerPowerOn" {
-        Activity { activity_name: "SpeakerPowerOn".to_string(), remote_control_action: "SpeakerPower".to_string(), message: "Turning on the speaker".to_string() }
-    } else if action_name=="SpeakerPowerOff" {
-        Activity { activity_name: "SpeakerPowerOff".to_string(), remote_control_action: "SpeakerPower".to_string(), message: "Turning off the speaker".to_string() }
-    } else {
-        Activity { activity_name: "Unknown".to_string(), remote_control_action: "Unknown".to_string(), message: "Action not known".to_string() }
-    }
+        , Activity { activity_name: "TvPowerOff".to_string(), remote_control_action: "TvPower".to_string(), message: "Turning off the tv".to_string() }
+        , Activity { activity_name: "SpeakerPowerOn".to_string(), remote_control_action: "SpeakerPower".to_string(), message: "Turning on the speaker".to_string() }
+        , Activity { activity_name: "SpeakerPowerOff".to_string(), remote_control_action: "SpeakerPower".to_string(), message: "Turning off the speaker".to_string() }
+    ]
 }
 
 fn call_remote_control(action_name: &str) {
-    Command::new("/Users/inigosurguy/Code/Inigo/rmmini/BlackBeanControl/BlackBeanControl.py")
+    Command::new(BLACK_BEAN_PROGRAM)
         .args(&["-c", action_name])
         .output()
         .expect("failed to execute process");
@@ -74,6 +78,8 @@ fn call_remote_control(action_name: &str) {
 
 // --------------
 
+#[derive(Clone)]
+#[derive(Debug)]
 struct Activity {
     activity_name: String,
     remote_control_action: String,
@@ -100,8 +106,8 @@ impl Display for Activity {
 }
 
 #[test] fn test_convert_action_to_activity() {
-    assert_eq!( convert_action_to_activity("TvPowerOn").remote_control_action, "TvPower");
-    assert_eq!( convert_action_to_activity("TvPowerOn").message, "Turning on the tv");
-    assert_eq!( convert_action_to_activity("TvPowerOff").message, "Turning off the tv");
-    assert_eq!( convert_action_to_activity("SpeakerPowerOff").remote_control_action, "SpeakerPower")
+    assert_eq!( convert_action_to_activity( "TvPowerOn").unwrap().remote_control_action, "TvPower");
+    assert_eq!( convert_action_to_activity("TvPowerOn").unwrap().message, "Turning on the tv");
+    assert_eq!( convert_action_to_activity("TvPowerOff").unwrap().message, "Turning off the tv");
+    assert_eq!( convert_action_to_activity("SpeakerPowerOff").unwrap().remote_control_action, "SpeakerPower")
 }
