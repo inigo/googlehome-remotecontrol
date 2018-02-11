@@ -22,7 +22,7 @@ fn send_response(request: &mut Request) -> IronResult<Response> {
     let mut payload = String::new();
     request.body.read_to_string(&mut payload).unwrap();
 
-    let action = extract_action_from_json(payload.as_str());
+    let action = extract_action_from_json(payload.as_str()).unwrap_or("Unknown".to_string());
     let activity_opt = convert_action_to_activity(action.as_str());
     println!("Got activity of {:?}", activity_opt);
 
@@ -42,17 +42,16 @@ fn send_response(request: &mut Request) -> IronResult<Response> {
     Ok(response)
 }
 
-fn extract_action_from_json(json_body: &str) -> String {
+fn extract_action_from_json(json_body: &str) -> Option<String> {
     // Note rustc_serialize is deprecated in favour of serde
     if let Ok(request_json) = json::Json::from_str(json_body) {
-        if let Some(result) = request_json.find("result") {
-            if let Some(action) = result.find("action") {
-                let result = action.as_string().unwrap();
-                return result.to_string();
-            };
-        };
-    };
-    "Unknown".to_owned()
+        let result= request_json.find("result")?;
+        let action = result.find("action")?;
+        let result = action.as_string().map(|a| a.to_string());
+        return result;
+    } else {
+        None
+    }
 }
 
 fn convert_action_to_activity(action_name: &str) -> Option<Activity> {
@@ -98,7 +97,7 @@ impl Display for Activity {
 
 #[test] fn test_extract_action_from_json() {
     let json_body = r#"{ "result": { "action": "TvPower" } }"#;
-    assert_eq!( extract_action_from_json(json_body), "TvPower" )
+    assert_eq!( extract_action_from_json(json_body), Some("TvPower".to_string()) )
 }
 
 #[test] fn test_call_remote_control() {
