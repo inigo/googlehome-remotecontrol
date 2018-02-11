@@ -8,7 +8,7 @@ use iron::status;
 use std::process::Command;
 use std::io::Read;
 use rustc_serialize::json::{self};
-
+use std::borrow::Borrow;
 
 use activities::convert_action_to_activity;
 
@@ -36,7 +36,7 @@ fn send_response(request: &mut Request) -> IronResult<Response> {
     }
 
 
-    let response_message = activity_opt.map(|a| a.message).unwrap_or("Action not known".to_string());
+    let response_message: &str = activity_opt.map(|a| a.message.borrow()).unwrap_or("Action not known");
 
     let mut response = Response::new();
     response.set_mut(status::Ok);
@@ -77,11 +77,10 @@ mod activities {
         ];
     }
 
-    pub fn convert_action_to_activity(action_name: &str) -> Option<Activity> {
-        ACTIVITIES.iter().find(|a| a.activity_name == action_name).map(|a| a.clone())
+    pub fn convert_action_to_activity(action_name: &str) -> Option<&Activity> {
+        ACTIVITIES.iter().find(|a| a.activity_name == action_name)
     }
 
-    #[derive(Clone)]
     #[derive(Debug)]
     pub struct Activity {
         pub activity_name: String,
