@@ -6,11 +6,8 @@ extern crate rustc_serialize;
 use iron::prelude::*;
 use iron::status;
 use std::io::Read;
-use rustc_serialize::json::{self};
-use std::borrow::Borrow;
 
-use activities::convert_action_to_activity;
-use remote_control::call_remote_control;
+use processor::process_payload;
 
 fn main() {
     println!("Starting Rust listener");
@@ -23,17 +20,7 @@ fn send_response(request: &mut Request) -> IronResult<Response> {
     let mut payload = String::new();
     request.body.read_to_string(&mut payload).unwrap();
 
-    let action = extract_action_from_json(payload.as_str()).unwrap_or("Unknown".to_string());
-    let activity_opt = convert_action_to_activity(action.as_str());
-    println!("Got activity of {:?}", activity_opt);
-
-    if let Some(ref a) = activity_opt {
-        call_remote_control(a.remote_control_action.as_str() );
-        println!("Called remote control with {}", a.remote_control_action);
-    }
-
-
-    let response_message: &str = activity_opt.map(|a| a.message.borrow()).unwrap_or("Action not known");
+    let response_message = process_payload(&payload);
 
     let mut response = Response::new();
     response.set_mut(status::Ok);
@@ -43,16 +30,43 @@ fn send_response(request: &mut Request) -> IronResult<Response> {
     Ok(response)
 }
 
-fn extract_action_from_json(json_body: &str) -> Option<String> {
-    // Note rustc_serialize is deprecated in favour of serde
-    if let Ok(request_json) = json::Json::from_str(json_body) {
-        let result= request_json.find("result")?;
-        let action = result.find("action")?;
-        let result = action.as_string().map(|a| a.to_string());
-        return result;
-    } else {
-        None
+mod processor {
+    use rustc_serialize::json::{self};
+    use activities::convert_action_to_activity;
+    use remote_control::call_remote_control;
+    use std::borrow::Borrow;
+
+    pub fn process_payload(payload: &str) -> String {
+        let action = extract_action_from_json(payload).unwrap_or("Unknown".to_string());
+        let activity_opt = convert_action_to_activity(action.as_str());
+        println!("Got activity of {:?}", activity_opt);
+
+        if let Some(ref a) = activity_opt {
+            call_remote_control(a.remote_control_action.as_str() );
+            println!("Called remote control with {}", a.remote_control_action);
+        }
+
+        let response_message: &str = activity_opt.map(|a| a.message.borrow()).unwrap_or("Action not known");
+        response_message.to_string()
     }
+
+    fn extract_action_from_json(json_body: &str) -> Option<String> {
+        // Note rustc_serialize is deprecated in favour of serde
+        if let Ok(request_json) = json::Json::from_str(json_body) {
+            let result= request_json.find("result")?;
+            let action = result.find("action")?;
+            let result = action.as_string().map(|a| a.to_string());
+            return result;
+        } else {
+            None
+        }
+    }
+
+    #[test] fn test_extract_action_from_json() {
+        let json_body = r#"{ "result": { "action": "TvPower" } }"#;
+        assert_eq!( extract_action_from_json(json_body), Some("TvPower".to_string()) )
+    }
+
 }
 
 mod activities {
@@ -87,6 +101,13 @@ mod activities {
         }
     }
 
+    #[test] fn test_convert_action_to_activity() {
+        assert_eq!( convert_action_to_activity( "TvPowerOn").unwrap().remote_control_action, "TvPower");
+        assert_eq!( convert_action_to_activity("TvPowerOn").unwrap().message, "Turning on the tv");
+        assert_eq!( convert_action_to_activity("TvPowerOff").unwrap().message, "Turning off the tv");
+        assert_eq!( convert_action_to_activity("SpeakerPowerOff").unwrap().remote_control_action, "SpeakerPower")
+    }
+
 }
 
 mod remote_control {
@@ -105,18 +126,4 @@ mod remote_control {
         call_remote_control("TvPower")
     }
 
-}
-
-// --------------
-
-#[test] fn test_extract_action_from_json() {
-    let json_body = r#"{ "result": { "action": "TvPower" } }"#;
-    assert_eq!( extract_action_from_json(json_body), Some("TvPower".to_string()) )
-}
-
-#[test] fn test_convert_action_to_activity() {
-    assert_eq!( convert_action_to_activity( "TvPowerOn").unwrap().remote_control_action, "TvPower");
-    assert_eq!( convert_action_to_activity("TvPowerOn").unwrap().message, "Turning on the tv");
-    assert_eq!( convert_action_to_activity("TvPowerOff").unwrap().message, "Turning off the tv");
-    assert_eq!( convert_action_to_activity("SpeakerPowerOff").unwrap().remote_control_action, "SpeakerPower")
 }
