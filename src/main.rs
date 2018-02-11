@@ -64,6 +64,7 @@ mod activities {
             , Activity { activity_name: "TvPowerOff".to_string(), remote_control_action: "TvPower".to_string(), message: "Turning off the tv".to_string() }
             , Activity { activity_name: "SpeakerPowerOn".to_string(), remote_control_action: "SpeakerPower".to_string(), message: "Turning on the speaker".to_string() }
             , Activity { activity_name: "SpeakerPowerOff".to_string(), remote_control_action: "SpeakerPower".to_string(), message: "Turning off the speaker".to_string() }
+            , Activity { activity_name: "TvSource".to_string(), remote_control_action: "TvSource".to_string(), message: "Changing the tv source".to_string() }
         ];
     }
 
