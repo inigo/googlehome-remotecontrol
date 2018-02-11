@@ -1,6 +1,7 @@
 extern crate iron;
 extern crate rustc_serialize;
 #[macro_use] extern crate mime;
+#[macro_use] extern crate lazy_static;
 
 use iron::prelude::*;
 use iron::status;
@@ -8,9 +9,11 @@ use std::process::Command;
 use std::io::Read;
 use rustc_serialize::json::{self};
 
+
 use activities::convert_action_to_activity;
 
-const BLACK_BEAN_PROGRAM: &str = "/Users/inigosurguy/Code/Inigo/rmmini/BlackBeanControl/BlackBeanControl.py";
+
+const BLACK_BEAN_PROGRAM: &str = "/Users/inigosurguy/Code/Inigo/rmmini/BlackBeanControl/BlackBeanCoXXXntrol.py";
 
 fn main() {
     println!("Starting Rust listener");
@@ -65,19 +68,17 @@ fn call_remote_control(action_name: &str) {
 mod activities {
     use std::fmt::{self, Formatter, Display};
 
-    pub fn convert_action_to_activity(action_name: &str) -> Option<Activity> {
-        let activities = activity_lookup();
-        activities.iter().find(|a| a.activity_name == action_name).map(|a| a.clone())
-    }
-
-    fn activity_lookup() -> Vec<Activity> {
-        println!("Populating list of activities");
-        vec![
+    lazy_static! {
+        static ref ACTIVITIES : Vec<Activity> = vec![
             Activity { activity_name: "TvPowerOn".to_string(), remote_control_action: "TvPower".to_string(), message: "Turning on the tv".to_string() }
             , Activity { activity_name: "TvPowerOff".to_string(), remote_control_action: "TvPower".to_string(), message: "Turning off the tv".to_string() }
             , Activity { activity_name: "SpeakerPowerOn".to_string(), remote_control_action: "SpeakerPower".to_string(), message: "Turning on the speaker".to_string() }
             , Activity { activity_name: "SpeakerPowerOff".to_string(), remote_control_action: "SpeakerPower".to_string(), message: "Turning off the speaker".to_string() }
-        ]
+        ];
+    }
+
+    pub fn convert_action_to_activity(action_name: &str) -> Option<Activity> {
+        ACTIVITIES.iter().find(|a| a.activity_name == action_name).map(|a| a.clone())
     }
 
     #[derive(Clone)]
