@@ -5,15 +5,12 @@ extern crate rustc_serialize;
 
 use iron::prelude::*;
 use iron::status;
-use std::process::Command;
 use std::io::Read;
 use rustc_serialize::json::{self};
 use std::borrow::Borrow;
 
 use activities::convert_action_to_activity;
-
-
-const BLACK_BEAN_PROGRAM: &str = "/Users/inigosurguy/Code/Inigo/rmmini/BlackBeanControl/BlackBeanCoXXXntrol.py";
+use remote_control::call_remote_control;
 
 fn main() {
     println!("Starting Rust listener");
@@ -58,13 +55,6 @@ fn extract_action_from_json(json_body: &str) -> Option<String> {
     }
 }
 
-fn call_remote_control(action_name: &str) {
-    Command::new(BLACK_BEAN_PROGRAM)
-        .args(&["-c", action_name])
-        .output()
-        .expect("failed to execute process");
-}
-
 mod activities {
     use std::fmt::{self, Formatter, Display};
 
@@ -98,15 +88,29 @@ mod activities {
 
 }
 
+mod remote_control {
+    use std::process::Command;
+
+    const BLACK_BEAN_PROGRAM: &str = "BlackBeanControl.py";
+
+    pub fn call_remote_control(action_name: &str) {
+        Command::new(BLACK_BEAN_PROGRAM)
+            .args(&["-c", action_name])
+            .output()
+            .expect("failed to execute process");
+    }
+
+    #[test] fn test_call_remote_control() {
+        call_remote_control("TvPower")
+    }
+
+}
+
 // --------------
 
 #[test] fn test_extract_action_from_json() {
     let json_body = r#"{ "result": { "action": "TvPower" } }"#;
     assert_eq!( extract_action_from_json(json_body), Some("TvPower".to_string()) )
-}
-
-#[test] fn test_call_remote_control() {
-    call_remote_control("TvPower")
 }
 
 #[test] fn test_convert_action_to_activity() {
